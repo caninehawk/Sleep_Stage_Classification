@@ -1,29 +1,26 @@
-## Sleep Stage Classification Project
-# Introduction
+# Sleep Stage Classification Project
+## Introduction
 This project focuses on developing and evaluating deep learning models for automatic sleep stage classification using physiological data. Accurate sleep stage classification is crucial for diagnosing sleep disorders and understanding overall health. The data used in this project consists of multi-channel physiological signals recorded over time, with each 30-second epoch labeled with a specific sleep stage.
 
-# The Challenge: Imbalanced Time Series Data
+## The Challenge: Imbalanced Time Series Data
 The primary challenges in this project stem from the nature of the sleep data:
 
-Time Series Data: Sleep stages evolve over time, meaning consecutive data points are highly dependent. Standard machine learning approaches often treat data points independently, which can lead to models that don't capture temporal dependencies well. Deep learning models like LSTMs, GRUs, and CNNs are better suited for this. We have processed the raw data into sequences of epochs to leverage these models.
-Class Imbalance: Sleep stages are not equally distributed; NREM stages (especially N2) are typically much more frequent than REM and Wake stages. Standard model training can result in models biased towards the majority class, leading to poor performance on minority classes (low recall and F1-score for REM and Wake).
-Data Leakage: Evaluating models on time series data requires careful splitting to avoid data leakage. Standard random train-test splits or k-fold cross-validation can split sequences or even data from the same individual across train and test sets, leading to overly optimistic performance estimates.
-Addressing the Challenges
+- ### Time Series Data: Sleep stages evolve over time, meaning consecutive data points are highly dependent. Standard machine learning approaches often treat data points independently, which can lead to models that don't capture temporal dependencies well. Deep learning models like LSTMs, GRUs, and CNNs are better suited for this. We have processed the raw data into sequences of epochs to leverage these models.
+- ### Class Imbalance: Sleep stages are not equally distributed; NREM stages (especially N2) are typically much more frequent than REM and Wake stages. Standard model training can result in models biased towards the majority class, leading to poor performance on minority classes (low recall and F1-score for REM and Wake).
+- ### Data Leakage: Evaluating models on time series data requires careful splitting to avoid data leakage. Standard random train-test splits or k-fold cross-validation can split sequences or even data from the same individual across train and test sets, leading to overly optimistic performance estimates.
+## Addressing the Challenges
 To build reliable models and obtain realistic performance estimates, we have taken several steps:
 
-Deep Learning Models: We implemented and evaluated various deep learning architectures, including LSTM, MLP, 1D CNN, GRU, and BiLSTM, designed to handle the sequential nature of the data.
+- ### Deep Learning Models: We implemented and evaluated various deep learning architectures, including LSTM, MLP, 1D CNN, GRU, and BiLSTM, designed to handle the sequential nature of the data.
 Initial Evaluation (Train-Test Split & K-Fold with SMOTE): We started with standard train-test splits and k-fold cross-validation. We also initially explored using SMOTE (Synthetic Minority Over-sampling Technique) to address class imbalance. However, we recognized that applying SMOTE on time series data before splitting could lead to data leakage across time and individuals.
-Implementing Group K-Fold Cross-Validation: To prevent data leakage by individual, we adopted Group K-Fold cross-validation. This ensures that all data from a single individual (mesaid) is kept entirely within either the training or validation set for each fold, providing a more realistic assessment of the model's ability to generalize to new individuals.
+- ### Implementing Group K-Fold Cross-Validation: To prevent data leakage by individual, we adopted Group K-Fold cross-validation. This ensures that all data from a single individual (mesaid) is kept entirely within either the training or validation set for each fold, providing a more realistic assessment of the model's ability to generalize to new individuals.
 Simplifying to 3-Class Mapping: The original 5 sleep stages (Wake, N1, N2, N3, REM) are highly imbalanced, especially N1 and N3 which are less frequent. Based on common practice in sleep analysis, we simplified the task to a 3-class problem (Wake, NREM, REM) by combining N1, N2, and N3 into a single NREM class. This reduces the severity of the imbalance and focuses on the major sleep states.
-Using Sequence Overlap (Stride=1): To increase the amount of training data available from our sequences, especially with the 3-class mapping, we adjusted the create_sequences_dl function to use a stride of 1. This means consecutive sequences overlap significantly, generating more training examples from the same underlying data.
-Exploring Class Imbalance Handling: Instead of SMOTE (due to leakage concerns), we focused on in-training techniques:
-Class Weights: We used compute_class_weight('balanced', ...) and passed these weights to the model.fit function when using categorical_crossentropy loss.
-Focal Loss: We implemented and experimented with Focal Loss, a loss function designed to down-weight the contribution of easy-to-classify (majority class) examples and focus training on hard, misclassified (minority class) examples.
-Diagnosing and Resolving Technical Issues: We encountered and resolved technical challenges, including:
-A ValueError during compute_class_weight when a training fold contained only one class. This was fixed by skipping such rare folds.
-A persistent ValueError with inconsistent sample counts during model.fit, particularly when using stride=1. After extensive debugging, including adding print statements and trying explicit integer casting, this issue was ultimately resolved by replacing the tf.keras.utils.to_categorical function with a manual NumPy-based one-hot encoding implementation, suggesting an unexpected interaction with the Keras utility in this specific data/environment context.
-Adjusting plot legends and layout for better visualization.
-Current Status
+- ### Using Sequence Overlap (Stride=1): To increase the amount of training data available from our sequences, especially with the 3-class mapping, we adjusted the create_sequences_dl function to use a stride of 1. This means consecutive sequences overlap significantly, generating more training examples from the same underlying data.
+- ### Exploring Class Imbalance Handling: Instead of SMOTE (due to leakage concerns), we focused on in-training techniques:
+- ### Class Weights: We used compute_class_weight('balanced', ...) and passed these weights to the model.fit function when using categorical_crossentropy loss.
+- ### Focal Loss: We implemented and experimented with Focal Loss, a loss function designed to down-weight the contribution of easy-to-classify (majority class) examples and focus training on hard, misclassified (minority class) examples.
+
+## Current Status
 We have implemented Group K-Fold cross-validation, adopted a 3-class mapping, used stride=1 for sequence creation, and evaluated the original deep learning models using both Class Weights and Focal Loss. We have diagnosed and fixed several technical hurdles along the way. We have also generated various visualizations and tables to compare the performance (focusing primarily on Test Accuracy and Macro F1) of different models under different evaluation and data handling strategies.
 
 The current focus is on analyzing the per-class performance (precision, recall, F1) using the detailed classification reports generated by our latest logging function to specifically understand how well the models are predicting the minority REM and Wake classes and compare the effectiveness of Class Weights versus Focal Loss.
